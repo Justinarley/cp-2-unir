@@ -1,0 +1,43 @@
+# === Playbook principal de Ansible ===
+# Este archivo orquesta la ejecución de los roles para desplegar la solución completa:
+#   1. acr  → Manejo de imágenes en Azure Container Registry
+#   2. vm   → Configuración de la máquina virtual y despliegue de Nginx
+#   3. aks  → Despliegue de la aplicación en AKS con almacenamiento persistente
+# Ejecución recomendada:
+#   ansible-playbook -i hosts.ini playbook.yml --ask-vault-pass
+# =====================================
+
+---
+# ---
+# ---
+# PLAY 1: Subida y gestión de imágenes en ACR (localhost)
+- name: "1. Preparar imágenes en ACR"
+  hosts: localhost
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: Ejecutar rol ACR (gestión de imágenes)
+      ansible.builtin.include_tasks: roles/acr/task/main.yml
+
+# ---
+# ---
+# PLAY 2: Configuración de la VM y despliegue del contenedor web (host remoto)
+- name: "2. Preparar VM y lanzar Nginx"
+  hosts: vm
+  become: true # Se requieren privilegios de administrador para instalar paquetes
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: Ejecutar rol VM (setup y web)
+      ansible.builtin.include_tasks: roles/vm/task/main.yml
+
+# ---
+# ---
+# PLAY 3: Despliegue de la aplicación en AKS (localhost, usando kubectl)
+- name: "3. Lanzar app en AKS"
+  hosts: localhost
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: Ejecutar rol AKS (despliegue completo)
+      ansible.builtin.include_tasks: roles/aks/tasks/main.yml

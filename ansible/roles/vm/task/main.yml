@@ -1,0 +1,37 @@
+# === Configuración de la VM y despliegue de Nginx ===
+# Este archivo automatiza la preparación de la máquina virtual, instalación de Podman,
+# autenticación en el registro y despliegue del contenedor web.
+# ================================================
+---
+# Paso 1: Actualizar la caché de paquetes del sistema
+- name: "VM | Refrescar apt"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+# Paso 2: Instalar Podman (gestor de contenedores)
+- name: "VM | Instalar Podman CLI"
+  ansible.builtin.apt:
+    name: podman
+    state: present
+
+# Paso 3: Login en el registro de contenedores (ACR)
+- name: "VM | Autenticación en ACR"
+  ansible.builtin.command:
+    cmd: "podman login {{ acr_login_server }} --username {{ acr_username }} --password {{ acr_password }}"
+
+# Paso 4: Descargar la imagen nginx desde el ACR
+- name: "VM | Obtener nginx del ACR"
+  ansible.builtin.command:
+    cmd: "podman pull {{ acr_login_server }}/nginx:latest"
+
+# Paso 5: Eliminar el contenedor nginx si ya existe (idempotencia)
+- name: "VM | Borrar nginx previo"
+  ansible.builtin.command:
+    cmd: "podman rm -f nginx-webserver"
+  ignore_errors: true
+
+# Paso 6: Lanzar el contenedor nginx en segundo plano y exponer el puerto 80
+- name: "VM | Lanzar nginx en Podman"
+  ansible.builtin.command:
+    cmd: "podman run -d --name nginx-webserver --restart always -p 80:80 {{ acr_login_server }}/nginx:latest"

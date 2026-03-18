@@ -1,0 +1,17 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
+
+# Sensitive files
+id_rsa.pem
+ansible/secrets.yml
+ansible/kubeconfig
+
+# OS / Editor
+.DS_Store
+
+# Python
+_pycache_/
